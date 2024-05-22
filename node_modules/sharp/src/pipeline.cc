@@ -325,6 +325,7 @@ class PipelineWorker : public Napi::AsyncWorker {
       if ((baton->keepMetadata & VIPS_FOREIGN_KEEP_ICC) && baton->withIccProfile.empty()) {
         // Cache input profile for use with output
         inputProfile = sharp::GetProfile(image);
+        baton->input->ignoreIcc = true;
       }
       char const *processingProfile = image.interpretation() == VIPS_INTERPRETATION_RGB16 ? "p3" : "srgb";
       if (
@@ -592,7 +593,7 @@ class PipelineWorker : public Napi::AsyncWorker {
 
       // Blur
       if (shouldBlur) {
-        image = sharp::Blur(image, baton->blurSigma);
+        image = sharp::Blur(image, baton->blurSigma, baton->precision, baton->minAmpl);
       }
 
       // Unflatten the image
@@ -609,7 +610,7 @@ class PipelineWorker : public Napi::AsyncWorker {
       }
 
       // Recomb
-      if (baton->recombMatrix != NULL) {
+      if (!baton->recombMatrix.empty()) {
         image = sharp::Recomb(image, baton->recombMatrix);
       }
 
@@ -848,6 +849,11 @@ class PipelineWorker : public Napi::AsyncWorker {
 
       image = sharp::SetAnimationProperties(
         image, nPages, targetPageHeight, baton->delay, baton->loop);
+
+      if (image.get_typeof(VIPS_META_PAGE_HEIGHT) == G_TYPE_INT) {
+        baton->pageHeightOut = image.get_int(VIPS_META_PAGE_HEIGHT);
+        baton->pagesOut = image.get_int(VIPS_META_N_PAGES);
+      }
 
       // Output
       sharp::SetTimeout(image, baton->timeoutSeconds);
@@ -1284,6 +1290,10 @@ class PipelineWorker : public Napi::AsyncWorker {
       if (baton->input->textAutofitDpi) {
         info.Set("textAutofitDpi", static_cast<uint32_t>(baton->input->textAutofitDpi));
       }
+      if (baton->pageHeightOut) {
+        info.Set("pageHeight", static_cast<int32_t>(baton->pageHeightOut));
+        info.Set("pages", static_cast<int32_t>(baton->pagesOut));
+      }
 
       if (baton->bufferOutLength > 0) {
         // Add buffer size to info
@@ -1532,6 +1542,8 @@ Napi::Value pipeline(const Napi::CallbackInfo& info) {
   baton->negate = sharp::AttrAsBool(options, "negate");
   baton->negateAlpha = sharp::AttrAsBool(options, "negateAlpha");
   baton->blurSigma = sharp::AttrAsDouble(options, "blurSigma");
+  baton->precision = sharp::AttrAsEnum<VipsPrecision>(options, "precision", VIPS_TYPE_PRECISION);
+  baton->minAmpl = sharp::AttrAsDouble(options, "minAmpl");
   baton->brightness = sharp::AttrAsDouble(options, "brightness");
   baton->saturation = sharp::AttrAsDouble(options, "saturation");
   baton->hue = sharp::AttrAsInt32(options, "hue");
@@ -1597,17 +1609,18 @@ Napi::Value pipeline(const Napi::CallbackInfo& info) {
     baton->convKernelScale = sharp::AttrAsDouble(kernel, "scale");
     baton->convKernelOffset = sharp::AttrAsDouble(kernel, "offset");
     size_t const kernelSize = static_cast<size_t>(baton->convKernelWidth * baton->convKernelHeight);
-    baton->convKernel = std::unique_ptr<double[]>(new double[kernelSize]);
+    baton->convKernel.resize(kernelSize);
     Napi::Array kdata = kernel.Get("kernel").As<Napi::Array>();
     for (unsigned int i = 0; i < kernelSize; i++) {
       baton->convKernel[i] = sharp::AttrAsDouble(kdata, i);
     }
   }
   if (options.Has("recombMatrix")) {
-    baton->recombMatrix = std::unique_ptr<double[]>(new double[9]);
     Napi::Array recombMatrix = options.Get("recombMatrix").As<Napi::Array>();
-    for (unsigned int i = 0; i < 9; i++) {
-       baton->recombMatrix[i] = sharp::AttrAsDouble(recombMatrix, i);
+    unsigned int matrixElements = recombMatrix.Length();
+    baton->recombMatrix.resize(matrixElements);
+    for (unsigned int i = 0; i < matrixElements; i++) {
+      baton->recombMatrix[i] = sharp::AttrAsDouble(recombMatrix, i);
     }
   }
   baton->colourspacePipeline = sharp::AttrAsEnum<VipsInterpretation>(

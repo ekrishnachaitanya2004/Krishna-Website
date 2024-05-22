@@ -43,6 +43,8 @@ struct PipelineBaton {
   std::string fileOut;
   void *bufferOut;
   size_t bufferOutLength;
+  int pageHeightOut;
+  int pagesOut;
   std::vector<Composite *> composite;
   std::vector<sharp::InputDescriptor *> joinChannelIn;
   int topOffsetPre;
@@ -76,6 +78,8 @@ struct PipelineBaton {
   bool negate;
   bool negateAlpha;
   double blurSigma;
+  VipsPrecision precision;
+  double minAmpl;
   double brightness;
   double saturation;
   int hue;
@@ -195,7 +199,7 @@ struct PipelineBaton {
   std::unordered_map<std::string, std::string> withExif;
   bool withExifMerge;
   int timeoutSeconds;
-  std::unique_ptr<double[]> convKernel;
+  std::vector<double> convKernel;
   int convKernelWidth;
   int convKernelHeight;
   double convKernelScale;
@@ -221,11 +225,13 @@ struct PipelineBaton {
   VipsForeignDzDepth tileDepth;
   std::string tileId;
   std::string tileBasename;
-  std::unique_ptr<double[]> recombMatrix;
+  std::vector<double> recombMatrix;
 
   PipelineBaton():
     input(nullptr),
     bufferOutLength(0),
+    pageHeightOut(0),
+    pagesOut(0),
     topOffsetPre(-1),
     topOffsetPost(-1),
     channels(0),

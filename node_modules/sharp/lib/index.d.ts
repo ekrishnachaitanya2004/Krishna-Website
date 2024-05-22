@@ -464,7 +464,7 @@ declare namespace sharp {
          * @throws {Error} Invalid parameters
          * @returns A sharp instance that can be used to chain operations
          */
-        blur(sigma?: number | boolean): Sharp;
+        blur(sigma?: number | boolean | BlurOptions): Sharp;
 
         /**
          * Merge alpha transparency channel, if any, with background.
@@ -571,11 +571,11 @@ declare namespace sharp {
 
         /**
          * Recomb the image with the specified matrix.
-         * @param inputMatrix 3x3 Recombination matrix
+         * @param inputMatrix 3x3 Recombination matrix or 4x4 Recombination matrix
          * @throws {Error} Invalid parameters
          * @returns A sharp instance that can be used to chain operations
          */
-        recomb(inputMatrix: Matrix3x3): Sharp;
+        recomb(inputMatrix: Matrix3x3 | Matrix4x4): Sharp;
 
         /**
          * Transforms the image using brightness, saturation, hue rotation and lightness.
@@ -1069,7 +1069,7 @@ declare namespace sharp {
         /** Number of pixels per inch (DPI), if present */
         density?: number | undefined;
         /** String containing JPEG chroma subsampling, 4:2:0 or 4:4:4 for RGB, 4:2:0:4 or 4:4:4:4 for CMYK */
-        chromaSubsampling: string;
+        chromaSubsampling?: string | undefined;
         /** Boolean indicating whether the image is interlaced using a progressive scan */
         isProgressive?: boolean | undefined;
         /** Number of pages/frames contained within the image, with support for TIFF, HEIF, PDF, animated GIF and animated WebP */
@@ -1108,11 +1108,18 @@ declare namespace sharp {
         resolutionUnit?: 'inch' | 'cm' | undefined;
         /** String containing format for images loaded via *magick */
         formatMagick?: string | undefined;
+        /** Array of keyword/text pairs representing PNG text blocks, if present. */
+        comments?: CommentsMetadata[] | undefined;
     }
 
     interface LevelMetadata {
         width: number;
         height: number;
+    }
+
+    interface CommentsMetadata {
+        keyword: string;
+        text: string;
     }
 
     interface Stats {
@@ -1333,6 +1340,17 @@ declare namespace sharp {
     interface RotateOptions {
         /** parsed by the color module to extract values for red, green, blue and alpha. (optional, default "#000000") */
         background?: Color | undefined;
+    }
+
+    type Precision = 'integer' | 'float' | 'approximate';
+
+    interface BlurOptions {
+        /** A value between 0.3 and 1000 representing the sigma of the Gaussian mask, where `sigma = 1 + radius / 2` */
+        sigma: number;
+        /** A value between 0.001 and 1. A smaller value will generate a larger, more accurate mask. */
+        minAmplitude?: number;
+        /** How accurate the operation should be, one of: integer, float, approximate. (optional, default "integer") */
+        precision?: Precision | undefined;
     }
 
     interface FlattenOptions {
@@ -1730,6 +1748,7 @@ declare namespace sharp {
 
     type Matrix2x2 = [[number, number], [number, number]];
     type Matrix3x3 = [[number, number, number], [number, number, number], [number, number, number]];
+    type Matrix4x4 = [[number, number, number, number], [number, number, number, number], [number, number, number, number], [number, number, number, number]];
 }
 
 export = sharp;
