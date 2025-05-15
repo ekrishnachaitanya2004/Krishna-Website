@@ -3,6 +3,7 @@ import { ClientRouter } from "astro:transitions";
 import { SITE } from "@/config";
 import { LOCALE } from "@/constants";
 import "@/styles/global.css";
+import PasswordPopup from "@/components/PasswordPopup.astro";
 
 const googleSiteVerification = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION;
 
@@ -134,6 +135,7 @@ const structuredData = {
     <script is:inline src="/toggle-theme.js" async></script>
   </head>
   <body>
+    <PasswordPopup />
     <slot />
   </body>
 </html>
