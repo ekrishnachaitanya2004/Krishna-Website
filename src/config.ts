@@ -1,8 +1,8 @@
 export const SITE = {
-  website: "https://ekrishnachaitanya2004.netlify.app", // Your deployed domain
+  website: "https://khvlove.me", // Your deployed domain
   author: "Krishna Chaitanya Ethamukkala",
   profile: "https://ekrishnachaitanya2004.netlify.app/about/",
-  desc: "A minimal, responsive, and SEO-friendly Astro blog theme.",
+  desc: "Hey future me, Everything you did, everything you felt, it’s all written here...",
   title: "Time Machine",
   ogImage: "astropaper-og.jpg",
   lightAndDarkMode: false,
